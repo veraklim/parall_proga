@@ -32,7 +32,7 @@ public:
 	void pop(T& item) {
 		unique_lock<mutex> mtx(_mtx);
 		while (thr_queue.empty()) {
-			//останавливает потребителя	если flag_shutdown==true
+			//Г®Г±ГІГ Г­Г ГўГ«ГЁГўГ ГҐГІ ГЇГ®ГІГ°ГҐГЎГЁГІГҐГ«Гї	ГҐГ±Г«ГЁ flag_shutdown==true
 			if (flag_shutdown)
 				return;
 			not_empty_cv.wait(mtx);
@@ -69,7 +69,7 @@ void consume(thread_safe_queue<int>& tasks, mutex& writemtx, int num){
 		int mod;
 		tasks.pop(mod);
 		writemtx.lock();
-		cout <<mod <<" "<< (mod^rand()) << " " << num << "\n";	 //возвращает в степень случайного числа
+		cout <<mod <<" "<< (mod^rand()) << " " << num << "\n";	 //ГўГ®Г§ГўГ°Г Г№Г ГҐГІ Гў Г±ГІГҐГЇГҐГ­Гј Г±Г«ГіГ·Г Г©Г­Г®ГЈГ® Г·ГЁГ±Г«Г 
 		writemtx.unlock();
 	}
 }
