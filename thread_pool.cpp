@@ -17,7 +17,7 @@ public:
 	ThreadPool();
 	ThreadPool(size_t num_work);
 
-	//отправить задачу в пул
+        //РѕС‚РїСЂР°РІРёС‚СЊ Р·Р°РґР°С‡Сѓ РІ РїСѓР»
 	shared_ptr<future<T>> submit(function<T()> func_perform);
 
 	void shut_down(){ task_queue.shutdown(); };
@@ -36,7 +36,7 @@ private:
 		Task(function<T()> j, shared_ptr<promise<T>> p) : job(j), promise_ptr(p){}
 	};
 
-	//потокобезопасная очередь заданий
+	//РїРѕС‚РѕРєРѕР±РµР·РѕРїР°СЃРЅР°СЏ РѕС‡РµСЂРµРґСЊ Р·Р°РґР°РЅРёР№
 	thread_safe_queue<Task> task_queue;
 };
 
@@ -45,10 +45,9 @@ ThreadPool<T>::ThreadPool() :ThreadPool(default_num_workers()){}
 
 template<typename T>
 ThreadPool<T>::ThreadPool(size_t num_work) : task_queue(100), num_workers(num_work) {
-	//запускаем рабочие потоки
+	//Р·Р°РїСѓСЃРєР°РµРј СЂР°Р±РѕС‡РёРµ РїРѕС‚РѕРєРё
 	for (size_t i = 0; i < num_workers; i++)
 		workers.push_back(thread([this]() -> void {
-		//берём задание
 		Task cur_task;
 		task_queue.pop(cur_task);
 		while (true) {
@@ -62,7 +61,7 @@ ThreadPool<T>::ThreadPool(size_t num_work) : task_queue(100), num_workers(num_wo
 template<typename T>
 shared_ptr<future<T>> ThreadPool<T>::submit(function<T()> func_perform){
 	auto my_promise_ptr = make_shared<promise<T>>(promise<T>());
-	//добавляем задачу в очередь
+	//РґРѕР±Р°РІР»СЏРµРј Р·Р°РґР°С‡Сѓ РІ РѕС‡РµСЂРµРґСЊ
 	task_queue.enqueue(Task(func_perform, my_promise_ptr));
 	return make_shared<future<T>>(my_promise_ptr->get_future());
 }
@@ -81,8 +80,6 @@ ThreadPool<T>::~ThreadPool(){
 		if (thread.joinable()) thread.join();
 }
 
-
-using namespace std;
 bool f(int n){
 	if (n%2 == 0)
 		return true;
