@@ -14,44 +14,43 @@ public:
 
 private:
 	size_t num_threads;
-
-	//первые ворота - на вход
+	//РїРµСЂРІС‹Рµ РІРѕСЂРѕС‚Р° - РЅР° РІС…РѕРґ
 	condition_variable cv_first;
 
-	//вторые ворота - на выход
+	//РІС‚РѕСЂС‹Рµ РІРѕСЂРѕС‚Р° - РЅР° РІС‹С…РѕРґ
 	condition_variable cv_second;
 	
 	mutex mtx;
 
-	//число потоков, которые хотят пройти через барьер
+	//С‡РёСЃР»Рѕ РїРѕС‚РѕРєРѕРІ, РєРѕС‚РѕСЂС‹Рµ С…РѕС‚СЏС‚ РїСЂРѕР№С‚Рё С‡РµСЂРµР· Р±Р°СЂСЊРµСЂ
 	size_t coming_threads;
 
-	//число потоков, находящихся внутри барьера (перед 2ми воротами)
+	//С‡РёСЃР»Рѕ РїРѕС‚РѕРєРѕРІ, РЅР°С…РѕРґСЏС‰РёС…СЃСЏ РІРЅСѓС‚СЂРё Р±Р°СЂСЊРµСЂР° (РїРµСЂРµРґ 2РјРё РІРѕСЂРѕС‚Р°РјРё)
 	size_t inside_threads;
 };
 
 void Barrier::enter(){
 	unique_lock<mutex> lock(mtx);
 
-	//пока кто-то есть внутри, заходить нельзя
+	//РїРѕРєР° РєС‚Рѕ-С‚Рѕ РµСЃС‚СЊ РІРЅСѓС‚СЂРё, Р·Р°С…РѕРґРёС‚СЊ РЅРµР»СЊР·СЏ
 	while (inside_threads) {
 		cv_first.wait(lock);
 	}
 	coming_threads++;
 
-	//пришли все
+	//РїСЂРёС€Р»Рё РІСЃРµ
 	if (coming_threads == num_threads) {
 		cv_second.notify_all();
 		inside_threads = num_threads;
 	}
 
-	//ждем остальных
+	//Р¶РґРµРј РѕСЃС‚Р°Р»СЊРЅС‹С…
 	while (coming_threads < num_threads) {
 		cv_second.wait(lock);
 	}
 	inside_threads--;
 
-	//если все вышли, первые ворота можно открыть
+	//РµСЃР»Рё РІСЃРµ РІС‹С€Р»Рё, РїРµСЂРІС‹Рµ РІРѕСЂРѕС‚Р° РјРѕР¶РЅРѕ РѕС‚РєСЂС‹С‚СЊ
 	if (!inside_threads) {
 		coming_threads = 0;
 		cv_first.notify_all();
