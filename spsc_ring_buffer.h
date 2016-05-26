@@ -21,15 +21,15 @@ private:
 template <typename T>
 inline bool spsc_ring_buffer<T>::enqueue(T e)
 {
-	size_t cur_tail = tail.load(memory_order_relaxed); //с tail работает только producer, можно читать relaxed
-	size_t cur_head = head.load(memory_order_acquire);	//надо чтобы и consumer и producer читали - acquire
+	size_t cur_tail = tail.load(memory_order_relaxed); //СЃ tail СЂР°Р±РѕС‚Р°РµС‚ С‚РѕР»СЊРєРѕ producer, РјРѕР¶РЅРѕ С‡РёС‚Р°С‚СЊ relaxed
+	size_t cur_head = head.load(memory_order_acquire);	//РЅР°РґРѕ С‡С‚РѕР±С‹ Рё consumer Рё producer С‡РёС‚Р°Р»Рё - acquire
 
-	//оставляем чтобы между хвостом и головой очереди в буфере хотя бы один свободный слот (чтобы различать пустую и полную очереди)
+	//РѕСЃС‚Р°РІР»СЏРµРј С‡С‚РѕР±С‹ РјРµР¶РґСѓ С…РІРѕСЃС‚РѕРј Рё РіРѕР»РѕРІРѕР№ РѕС‡РµСЂРµРґРё РІ Р±СѓС„РµСЂРµ С…РѕС‚СЏ Р±С‹ РѕРґРёРЅ СЃРІРѕР±РѕРґРЅС‹Р№ СЃР»РѕС‚ (С‡С‚РѕР±С‹ СЂР°Р·Р»РёС‡Р°С‚СЊ РїСѓСЃС‚СѓСЋ Рё РїРѕР»РЅСѓСЋ РѕС‡РµСЂРµРґРё)
 	if ((cur_tail + 1) % capacity == cur_head){
 		return false;
 	}
 	data[cur_tail] = move(e);
-	tail.store((cur_tail + 1) % capacity, memory_order_release); //для записи надо чтобы и consumer и producer видели изменения
+	tail.store((cur_tail + 1) % capacity, memory_order_release); //РґР»СЏ Р·Р°РїРёСЃРё РЅР°РґРѕ С‡С‚РѕР±С‹ Рё consumer Рё producer РІРёРґРµР»Рё РёР·РјРµРЅРµРЅРёСЏ
 	return true;
 }
 
@@ -37,7 +37,7 @@ inline bool spsc_ring_buffer<T>::enqueue(T e)
 template <typename T>
 inline bool spsc_ring_buffer<T>::dequeue(T& e)
 {
-	//аналогично enqueue выбираем memory ordering
+	//Р°РЅР°Р»РѕРіРёС‡РЅРѕ enqueue РІС‹Р±РёСЂР°РµРј memory ordering
 	size_t cur_head = head.load(memory_order_relaxed);
 	size_t cur_tail = tail.load(memory_order_acquire);
 
