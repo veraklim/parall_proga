@@ -68,7 +68,7 @@ public:
 	explicit thread_pool(size_t num_work);
 
 	//отправить задачу в пул
-	shared_ptr<future<T>> submit(function<T()> func_perform);
+	future<T> submit(function<T()> func_perform);
 
 	void shutdown(){
 		flag_shutdown.store(true);
@@ -82,51 +82,44 @@ private:
 	size_t default_num_workers();
 	atomic_bool flag_shutdown;
 
-	struct Task{
-		function<T()> job;
-		shared_ptr<promise<T>> promise_ptr;
-
-		Task() : job(nullptr), promise_ptr(nullptr){}
-		Task(function<T()> j, shared_ptr<promise<T>> p) : job(j), promise_ptr(p){}
-	};
-
 	//потокобезопасная очередь заданий
-	thread_safe_queue<Task> task_queue;
+	thread_safe_queue<pair<function<T()>,promise<T>*>> task_queue;
 };
 
 template<typename T>
 thread_pool<T>::thread_pool() :thread_pool(default_num_workers()){}
 
 template<typename T>
-thread_pool<T>::thread_pool(size_t num_work) : task_queue(100), num_workers(num_work) {
+thread_pool<T>::thread_pool(size_t num_work) : num_workers(num_work) {
 	flag_shutdown.store(false);
 	//запускаем рабочие потоки
 	for (size_t i = 0; i < num_workers; i++)
 		workers.emplace_back(thread([this]() -> void {
 		//берём задание
-		Task cur_task;
+		pair<function<T()>, promise<T>*> cur_task;
 		while (true){
 			try{
 				if (task_queue.pop(cur_task)) {
-					cur_task.promise_ptr->set_value(cur_task.job());
+					cur_task.second->set_value(cur_task.first());
 				}
 				else{
 					return;
 				}
 			}
 			catch (exception&){
-				cur_task.promise_ptr->set_exception(current_exception());
+				cur_task.second->set_exception(current_exception());
 			};
 		}
 	}));
 }
 
 template<typename T>
-shared_ptr<future<T>> thread_pool<T>::submit(function<T()> func_perform){
-	auto my_promise_ptr = make_shared<promise<T>>(promise<T>());
+future<T> thread_pool<T>::submit(function<T()> func_perform){
+	auto my_promise_ptr = new promise<T>;
+	future<T> res = my_promise_ptr->get_future();
 	//добавляем задачу в очередь
-	task_queue.enqueue(Task(func_perform, my_promise_ptr));
-	return make_shared<future<T>>(my_promise_ptr->get_future());
+	task_queue.enqueue(make_pair(func_perform, my_promise_ptr));
+	return res;
 }
 
 template<typename T>
